@@ -2,7 +2,7 @@
 # from airflow import DAG
 # from airflow.operators.python import PythonOperator
 from sklearn.ensemble import RandomForestClassifier
-
+import json
 
 # default_args = {
 #     'owner': 'airflow',
@@ -10,21 +10,23 @@ from sklearn.ensemble import RandomForestClassifier
 # }
 
 
+
 def gettrafficcrashdata():
-    import json
     import requests
+    f = open('sample_traffic_crash_data.json')
+    data = json.load(f)
 
     res = requests.get('https://data.cityofchicago.org/resource/85ca-t3if.json')
     res = res.json()
     #print(json.dumps(res, indent=3))
-    return res
+    return data
 
 def gettrafficcongestiondata():
     import requests
     import json
     congestion_raw_data = requests.get('https://data.cityofchicago.org/resource/n4j6-wkkf.json')
     congestion_raw_data = congestion_raw_data.json()
-    print(json.dumps(congestion_raw_data, indent=3))
+    # print(json.dumps(congestion_raw_data, indent=3))
     return congestion_raw_data
 
 
@@ -59,19 +61,23 @@ def formattrafficcrashdata(res):
             "latitude": record.get("latitude"),
             "longitude": record.get("longitude"),
         }
-        print(json.dumps(formatted_record, indent=3))
+        # print(json.dumps(formatted_record, indent=3))
         formatted_data.append(formatted_record)
     return formatted_data
 
 
 def stream_data():
     import json
+    from kafka import KafkaProducer
     res = gettrafficcrashdata()
     # alert_message = alert_user(res[3])
     # print(alert_message)
-    format_res = formattrafficcrashdata(res)
-    # print(json.dumps(format_res, indent=3))
-    tc = gettrafficcongestiondata()
+    # format_res = formattrafficcrashdata(res)
+    print(json.dumps(res, indent=3))
+    # print(len(format_res))
+    # tc = gettrafficcongestiondata()
+    producer = KafkaProducer(bootstrap_servers=['localhost:9092'], max_block_ms=5000)
+    producer.send('traffic_crash_data', json.dumps(res).encode('utf-8'))
 
 
 stream_data()
