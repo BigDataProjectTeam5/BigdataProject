@@ -2,6 +2,7 @@ from datetime import datetime
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.decorators import task
+import logging
 from sklearn.ensemble import RandomForestClassifier
 import json
 from kafka import KafkaProducer
@@ -12,24 +13,28 @@ producer = KafkaProducer(bootstrap_servers=['localhost:9092'], max_block_ms = 10
 
 default_args = {
     'owner': 'airflow',
-    'start_date': datetime(2024, 3, 29, 00)
+    'start_date': datetime(2024, 4, 19, 00)
 }
 
+log = logging.getLogger(__name__)
 
 
 def getTrafficCrashData():
     # f = open('sample_traffic_crash_data.json')
     # data = json.load(f)
 
+    log.info("getTrafficCrashData > begin")
     res = requests.get('https://data.cityofchicago.org/resource/85ca-t3if.json')
     res = res.json()
-    print(json.dumps(res, indent=3))
+    log.info("getTrafficCrashData > Done parsing result from API call.. returning result to caller")
     return res
 
 def getTrafficCongestionData():
+    log.info("getTrafficCongestionData > begin")
     congestion_raw_data = requests.get('https://data.cityofchicago.org/resource/n4j6-wkkf.json')
     congestion_raw_data = congestion_raw_data.json()
     # print(json.dumps(congestion_raw_data, indent=3))
+    log.info("getTrafficCongestionData > done")
     return congestion_raw_data
 
 
@@ -80,11 +85,19 @@ def stream_data():
 
 with DAG(
         'task_chicago_data_populate',
-        schedule='*/1 * * * *',
+        schedule='*/3 * * * *',
         default_args=default_args,
         catchup=True
 ) as dag:
+    def stream_data():
+        import json
+        res = getTrafficCrashData()
+        formatted_data = formatTrafficCrashData(res)
+        print(formatted_data)
+
     streaming_task = PythonOperator(
         task_id='stream_data_from_api',
         python_callable=stream_data
     )
+
+    streaming_task
