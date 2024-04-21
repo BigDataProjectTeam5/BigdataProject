@@ -10,15 +10,16 @@ from pyspark.sql.types import StructType, StructField, StringType
 
 
 def create_keyspace(session):
-#create keyspace here
+    # create keyspace here
     session.execute("""
     CREATE KEYSPACE IF NOT EXISTS spark_streams
     WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'};
 """)
     print("Keyspace created successfully!")
 
+
 def create_table(session):
-#create table here
+    # create table here
     session.execute("""
     CREATE TABLE IF NOT EXISTS spark_streams.created_crash_records (
     id UUID PRIMARY KEY,
@@ -46,32 +47,34 @@ def create_table(session):
     longitude TEXT
     """)
     print("Table created successfully!")
+
+
 def insert_data(session, **kwargs):
-    #insertion here
+    # insertion here
     print("inserting data...")
     user_id = kwargs.get('id')
     crash_record_id = kwargs.get('crash_record_id')
     crash_date = kwargs.get('crash_date')
     crash_hour = kwargs.get('crash_hour')
     crash_day_of_week = kwargs.get('crash_day_of_week')
-    crash_month  = kwargs.get('crash_month')
-    posted_speed_limit  = kwargs.get('posted_speed_limit')
-    weather_condition  = kwargs.get('weather_condition')
-    lighting_condition  = kwargs.get('lighting_condition')
-    first_crash_type  = kwargs.get('first_crash_type')
-    trafficway_type  = kwargs.get('trafficway_type')
-    roadway_surface_cond  = kwargs.get('roadway_surface_cond')
-    street_alignment  = kwargs.get('street_alignment')
-    road_defect  = kwargs.get('road_defect')
-    crash_type  = kwargs.get('crash_type')
-    damage  = kwargs.get('damage')
-    main_cause  = kwargs.get('main_cause')
-    secondary_cause  = kwargs.get('secondary_cause')
-    street_number  = kwargs.get('street_number')
-    street_direction  = kwargs.get('street_direction')
-    street_name  = kwargs.get('street_name')
-    latitude  = kwargs.get('latitude')
-    longitude  = kwargs.get('longitude')
+    crash_month = kwargs.get('crash_month')
+    posted_speed_limit = kwargs.get('posted_speed_limit')
+    weather_condition = kwargs.get('weather_condition')
+    lighting_condition = kwargs.get('lighting_condition')
+    first_crash_type = kwargs.get('first_crash_type')
+    trafficway_type = kwargs.get('trafficway_type')
+    roadway_surface_cond = kwargs.get('roadway_surface_cond')
+    street_alignment = kwargs.get('street_alignment')
+    road_defect = kwargs.get('road_defect')
+    crash_type = kwargs.get('crash_type')
+    damage = kwargs.get('damage')
+    main_cause = kwargs.get('main_cause')
+    secondary_cause = kwargs.get('secondary_cause')
+    street_number = kwargs.get('street_number')
+    street_direction = kwargs.get('street_direction')
+    street_name = kwargs.get('street_name')
+    latitude = kwargs.get('latitude')
+    longitude = kwargs.get('longitude')
 
     try:
         session.execute("""
@@ -79,25 +82,27 @@ def insert_data(session, **kwargs):
         crash_date, crash_hour,  crash_day_of_week, crash_month, posted_speed_limit, weather_condition, lighting_condition,
         first_crash_type, trafficway_type,  roadway_surface_cond, street_alignment, road_defect, 
         crash_type, damage, main_cause, secondary_cause,street_number, street_direction, street_name,
-       latitude, longitude ) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s %s, %s, %s, %s, %s, %s, %s, %s )""",
-        (user_id, crash_record_id, crash_date, crash_hour,  crash_day_of_week, crash_month, posted_speed_limit,
-         weather_condition, lighting_condition, first_crash_type, trafficway_type,  roadway_surface_cond, street_alignment, road_defect,
-        crash_type, damage, main_cause, secondary_cause,street_number, street_direction, street_name,
-       latitude, longitude))
+       latitude, longitude ) VALUES (%s,%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )""",
+                        (user_id, crash_record_id, crash_date, crash_hour, crash_day_of_week, crash_month,
+                         posted_speed_limit,
+                         weather_condition, lighting_condition, first_crash_type, trafficway_type, roadway_surface_cond,
+                         street_alignment, road_defect,
+                         crash_type, damage, main_cause, secondary_cause, street_number, street_direction, street_name,
+                         latitude, longitude))
         logging.info(f"Data inserted for {crash_record_id}")
     except Exception as e:
         logging.error(f"could not insert data due to exception {e}")
 
 
 def create_spark_connection():
-    s_conn =None
+    s_conn = None
     try:
         s_conn = SparkSession.builder \
-            .appName('SparkDataStreaming')  \
+            .appName('SparkDataStreaming') \
             .config('spark.jars.packages', "com.datastax.spark:spark-cassandra-connector-2.13:3.41,"
-                    "org.apache.spark:spark-sql-kafka-0-10_2.13:3.4.1") \
-        .config('spark.cassandra.connection.host', 'localhost') \
-        .getOrCreate()
+                                           "org.apache.spark:spark-sql-kafka-0-10_2.13:3.4.1") \
+            .config('spark.cassandra.connection.host', 'localhost') \
+            .getOrCreate()
 
         s_conn.sparkContext.setLogLevel("ERROR")
         logging.info("Spark connection created successfully!")
@@ -105,12 +110,13 @@ def create_spark_connection():
         logging.error(f"Couldn't create spark connection due to exception {e}")
     return s_conn
 
+
 def connect_to_kafka(spark_conn):
     spark_df = None
     try:
         spark_df = spark_conn.readStream \
             .format('kafka') \
-            .option('kafka.bootstrap.servers', 'localhost:9092')\
+            .option('kafka.bootstrap.servers', 'localhost:9092') \
             .option('subscribe', 'traffic_crash_data') \
             .option('startingOffsets', 'earliest') \
             .load()
@@ -118,13 +124,13 @@ def connect_to_kafka(spark_conn):
         logging.info("kafka dataframe created successfully")
 
     except Exception as e:
-        logging.warning (f"kafka dataframe could not be created because: {e}")
+        logging.warning(f"kafka dataframe could not be created because: {e}")
     return spark_df
 
-def create_cassandra_connection():
 
+def create_cassandra_connection():
     try:
-        #connecting to cassandra cluster
+        # connecting to cassandra cluster
         cluster = Cluster(['localhost'])
         cas_session = cluster.connect()
         return cas_session
@@ -132,8 +138,8 @@ def create_cassandra_connection():
         logging.error(f"Couldn't create cassandra connection due to exception {e}")
         return None
 
-def create_selection_df_from_kafka(spark_df):
 
+def create_selection_df_from_kafka(spark_df):
     schema = StructType([
         StructField('id', StringType(), False),
         StructField('crash_record_id', StringType(), False),
@@ -160,18 +166,19 @@ def create_selection_df_from_kafka(spark_df):
         StructField('longitude', StringType(), False)
     ])
 
-    sel = spark_df.selextExpr("CAST(value AS STRING)") \
+    sel = spark_df.selectExpr("CAST(value AS STRING)") \
         .select(from_json(col('value'), schema).alias('data')).select("data.*")
     print(sel)
 
     return sel
 
+
 if __name__ == "__main__":
-    #create spark connection
-    spark_conn=create_spark_connection()
+    # create spark connection
+    spark_conn = create_spark_connection()
 
     if spark_conn is not None:
-        #connect to kafka with spark connection
+        # connect to kafka with spark connection
         spark_df = connect_to_kafka(spark_conn)
         selection_df = create_selection_df_from_kafka(spark_df)
         session = create_cassandra_connection()
@@ -179,11 +186,11 @@ if __name__ == "__main__":
         if session is not None:
             create_keyspace(session)
             create_table(session)
-            insert_data(session)
+            #insert_data(session)
 
             streaming_query = (selection_df.writeStream.format("org.apache.spark.sql.cassandra")
-                                .option('checkpointLocation', '/tmp/checkpoint')
-                                .option('keyspace', 'spark_streams')
+                               .option('checkpointLocation', '/tmp/checkpoint')
+                               .option('keyspace', 'spark_streams')
                                .option('table', 'created_crash_records')
                                .start())
             streaming_query.awaitTermination()
