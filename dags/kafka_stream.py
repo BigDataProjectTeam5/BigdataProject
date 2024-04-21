@@ -1,7 +1,7 @@
 # from datetime import datetime
 # from airflow import DAG
 # from airflow.operators.python import PythonOperator
-from sklearn.ensemble import RandomForestClassifier
+# from sklearn.ensemble import RandomForestClassifier
 import json
 from kafka import KafkaProducer
 import requests
