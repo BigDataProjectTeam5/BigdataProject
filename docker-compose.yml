@@ -99,10 +99,10 @@ services:
     depends_on:
       - spark-master
     environment:
-      SPARK MODE: worker
-      SPARK WORKER_CORES: 2
-      SPARK WORKER_MEMORY: 1g
-      SPARK MASTER URL: spark://spark-master:7077
+      SPARK_MODE: worker
+      SPARK_WORKER_CORES: 2
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_MASTER_URL: spark://spark-master:7077
     networks:
       - confluent
 

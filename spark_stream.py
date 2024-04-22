@@ -99,7 +99,7 @@ def create_spark_connection():
     try:
         s_conn = SparkSession.builder \
             .appName('SparkDataStreaming') \
-            .config('spark.jars.packages', "com.datastax.spark:spark-cassandra-connector-2.13:3.41,"
+            .config('spark.jars.packages', "com.datastax.spark:spark-cassandra-connector_2.13:3.4.1,"
                                            "org.apache.spark:spark-sql-kafka-0-10_2.13:3.4.1") \
             .config('spark.cassandra.connection.host', 'localhost') \
             .getOrCreate()
@@ -108,6 +108,7 @@ def create_spark_connection():
         logging.info("Spark connection created successfully!")
     except Exception as e:
         logging.error(f"Couldn't create spark connection due to exception {e}")
+
     return s_conn
 
 
@@ -125,6 +126,7 @@ def connect_to_kafka(spark_conn):
 
     except Exception as e:
         logging.warning(f"kafka dataframe could not be created because: {e}")
+
     return spark_df
 
 
