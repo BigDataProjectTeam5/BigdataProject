@@ -22,29 +22,29 @@ def create_table(session):
     # create table here
     session.execute("""
     CREATE TABLE IF NOT EXISTS spark_streams.created_crash_records (
-    id UUID PRIMARY KEY,
-    crash_record_id TEXT
-    crash_date TEXT
-    crash_hour TEXT
-    crash_day_of_week TEXT
-    crash_month TEXT
-    posted_speed_limit TEXT
-    weather_condition TEXT
-    lighting_condition TEXT
-    first_crash_type TEXT
-    trafficway_type TEXT
-    roadway_surface_cond TEXT
-    street_alignment TEXT
-    road_defect TEXT
-    crash_type TEXT
-    damage TEXT
-    main_cause TEXT
-    secondary_cause TEXT
-    street_number TEXT
-    street_direction TEXT
-    street_name TEXT
-    latitude TEXT
-    longitude TEXT
+        id UUID PRIMARY KEY,
+        crash_record_id TEXT,
+        crash_date TEXT,
+        crash_hour TEXT,
+        crash_day_of_week TEXT,
+        crash_month TEXT,
+        posted_speed_limit TEXT,
+        weather_condition TEXT,
+        lighting_condition TEXT,
+        first_crash_type TEXT,
+        trafficway_type TEXT,
+        roadway_surface_cond TEXT,
+        street_alignment TEXT,
+        road_defect TEXT,
+        crash_type TEXT,
+        damage TEXT,
+        main_cause TEXT,
+        secondary_cause TEXT,
+        street_number TEXT,
+        street_direction TEXT,
+        street_name TEXT,
+        latitude TEXT,
+        longitude TEXT ); 
     """)
     print("Table created successfully!")
 
@@ -99,8 +99,8 @@ def create_spark_connection():
     try:
         s_conn = SparkSession.builder \
             .appName('SparkDataStreaming') \
-            .config('spark.jars.packages', "com.datastax.spark:spark-cassandra-connector_2.13:3.4.1,"
-                                           "org.apache.spark:spark-sql-kafka-0-10_2.13:3.4.1") \
+            .config('spark.jars.packages', "com.datastax.spark:spark-cassandra-connector_2.12:3.0.1,"
+                                           "org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1") \
             .config('spark.cassandra.connection.host', 'localhost') \
             .getOrCreate()
 
@@ -188,11 +188,11 @@ if __name__ == "__main__":
         if session is not None:
             create_keyspace(session)
             create_table(session)
-            #insert_data(session)
-
+            # insert_data(session)
+            logging.info("Streaming is being started...")
             streaming_query = (selection_df.writeStream.format("org.apache.spark.sql.cassandra")
-                               .option('checkpointLocation', '/tmp/checkpoint')
-                               .option('keyspace', 'spark_streams')
-                               .option('table', 'created_crash_records')
-                               .start())
+                                .option('checkpointLocation', '/tmp/checkpoint')
+                                .option('keyspace', 'spark_streams')
+                                .option('table', 'created_crash_records')
+                                .start())
             streaming_query.awaitTermination()
