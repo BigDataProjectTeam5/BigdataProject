@@ -65,12 +65,12 @@ def formatRecord(record: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 def publishFormattedTrafficCrashData(res: List[Dict[str, Any]]):
-    log.info("publishFormattedTrafficCrashData > started.")
+    log.info("publishFormattedTrafficCrashData > started. receiving {} data".format(len(res)))
     for idx, record in enumerate(res):
         formatted_record = formatRecord(record)
-        log.info(idx, "publishFormattedTrafficCrashData > data formatted, sending data to Kafka")
+        log.info("{} publishFormattedTrafficCrashData > data formatted, sending data to Kafka".format(idx))
         producer.send('traffic_crash_data', json.dumps(formatted_record).encode('utf-8'))
-        log.info(idx, "publishFormattedTrafficCrashData > data sent to Kafka, sleeping..")
+        log.info("{} publishFormattedTrafficCrashData > data sent to Kafka, sleeping..".format(idx))
         time.sleep(0.5)
         log.info(idx, "publishFormattedTrafficCrashData > sleep timer off.")
     log.info("publishFormattedTrafficCrashData > done.")
