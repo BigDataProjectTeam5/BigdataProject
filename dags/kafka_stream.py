@@ -2,14 +2,14 @@ from datetime import datetime
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.decorators import task
+from typing import Any, Dict, List
 import logging
-from sklearn.ensemble import RandomForestClassifier
 import json
 from kafka import KafkaProducer
 import requests
 import time
 
-producer = KafkaProducer(bootstrap_servers=['localhost:9092'], max_block_ms = 10000)
+producer = KafkaProducer(bootstrap_servers=['broker:29092'], max_block_ms = 10000)
 
 default_args = {
     'owner': 'airflow',
@@ -38,13 +38,8 @@ def getTrafficCongestionData():
     return congestion_raw_data
 
 
-
-
-def formatTrafficCrashData(res):
-    formatted_data = []
-
-    for record in res:
-        formatted_record = {
+def formatRecord(record: Dict[str, Any]) -> Dict[str, Any]:
+    return {
             "crash_record_id": record.get("crash_record_id"),
             "crash_date": record.get("crash_date"),
             "crash_hour": record.get("crash_hour"),
@@ -68,19 +63,17 @@ def formatTrafficCrashData(res):
             "latitude": record.get("latitude"),
             "longitude": record.get("longitude"),
         }
-        print(json.dumps(formatted_record, indent=3))
+
+def publishFormattedTrafficCrashData(res: List[Dict[str, Any]]):
+    log.info("publishFormattedTrafficCrashData > started.")
+    for idx, record in enumerate(res):
+        formatted_record = formatRecord(record)
+        log.info(idx, "publishFormattedTrafficCrashData > data formatted, sending data to Kafka")
         producer.send('traffic_crash_data', json.dumps(formatted_record).encode('utf-8'))
+        log.info(idx, "publishFormattedTrafficCrashData > data sent to Kafka, sleeping..")
         time.sleep(0.5)
-
-        formatted_data.append(formatted_record)
-    return formatted_data
-
-# @task(task_id="fetch_data_from_api")
-def stream_data():
-    import json
-    res = getTrafficCrashData()
-    formatted_data = formatTrafficCrashData(res)
-    print(formatted_data)
+        log.info(idx, "publishFormattedTrafficCrashData > sleep timer off.")
+    log.info("publishFormattedTrafficCrashData > done.")
 
 
 with DAG(
@@ -92,11 +85,10 @@ with DAG(
     def stream_data():
         import json
         res = getTrafficCrashData()
-        formatted_data = formatTrafficCrashData(res)
-        print(formatted_data)
+        publishFormattedTrafficCrashData(res)
 
     streaming_task = PythonOperator(
-        task_id='stream_data_from_api',
+        task_id='stream_data_from_api_to_kafka',
         python_callable=stream_data
     )
 
