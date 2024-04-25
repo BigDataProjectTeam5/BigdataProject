@@ -9,8 +9,6 @@ from kafka import KafkaProducer
 import requests
 import time
 
-producer = KafkaProducer(bootstrap_servers=['broker:29092'], max_block_ms = 10000)
-
 default_args = {
     'owner': 'airflow',
     'start_date': datetime(2024, 4, 19, 00)
@@ -66,14 +64,13 @@ def formatRecord(record: Dict[str, Any]) -> Dict[str, Any]:
 
 def publishFormattedTrafficCrashData(res: List[Dict[str, Any]]):
     log.info("publishFormattedTrafficCrashData > started. receiving %s data", len(res))
+    producer = KafkaProducer(bootstrap_servers=['broker:9092'], value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
     for idx, record in enumerate(res):
         formatted_record = formatRecord(record)
         log.info("%s publishFormattedTrafficCrashData > data formatted, sending data to Kafka", idx)
-        producer.send('traffic_crash_data', json.dumps(formatted_record).encode('utf-8'))
-        log.info("%s publishFormattedTrafficCrashData > data sent to Kafka, sleeping..", idx)
-        time.sleep(0.3)
-        log.info("%s publishFormattedTrafficCrashData > sleep timer off.", idx)
+        print(producer.send('traffic_crash_data', formatted_record).get(timeout=30))
+        log.info("%s publishFormattedTrafficCrashData > data sent to Kafka, continuing..", idx)
     log.info("publishFormattedTrafficCrashData > done.")
 
 
