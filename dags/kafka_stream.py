@@ -65,20 +65,21 @@ def formatRecord(record: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 def publishFormattedTrafficCrashData(res: List[Dict[str, Any]]):
-    log.info("publishFormattedTrafficCrashData > started. receiving {} data".format(len(res)))
+    log.info("publishFormattedTrafficCrashData > started. receiving %s data", len(res))
+
     for idx, record in enumerate(res):
         formatted_record = formatRecord(record)
-        log.info("{} publishFormattedTrafficCrashData > data formatted, sending data to Kafka".format(idx))
+        log.info("%s publishFormattedTrafficCrashData > data formatted, sending data to Kafka", idx)
         producer.send('traffic_crash_data', json.dumps(formatted_record).encode('utf-8'))
-        log.info("{} publishFormattedTrafficCrashData > data sent to Kafka, sleeping..".format(idx))
-        time.sleep(0.5)
-        log.info(idx, "publishFormattedTrafficCrashData > sleep timer off.")
+        log.info("%s publishFormattedTrafficCrashData > data sent to Kafka, sleeping..", idx)
+        time.sleep(0.3)
+        log.info("%s publishFormattedTrafficCrashData > sleep timer off.", idx)
     log.info("publishFormattedTrafficCrashData > done.")
 
 
 with DAG(
         'task_chicago_data_populate',
-        schedule='*/3 * * * *',
+        schedule='*/5 * * * *',
         default_args=default_args,
         catchup=True
 ) as dag:
