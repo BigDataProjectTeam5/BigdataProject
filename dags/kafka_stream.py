@@ -1,40 +1,95 @@
-# from datetime import datetime
-# from airflow import DAG
-# from airflow.operators.python import PythonOperator
+from datetime import datetime
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.decorators import task
+from typing import Any, Dict, List
+import logging
+import json
+from kafka import KafkaProducer
+import requests
+import time
 
-# default_args = {
-#     'owner': 'airflow',
-#     'start_date': datetime(2024, 24, 3, 10, 00)
-# }
+producer = KafkaProducer(bootstrap_servers=['broker:29092'], max_block_ms = 10000)
+
+default_args = {
+    'owner': 'airflow',
+    'start_date': datetime(2024, 4, 19, 00)
+}
+
+log = logging.getLogger(__name__)
 
 
-def getdata():
-    import json
-    import requests
+def getTrafficCrashData():
+    # f = open('sample_traffic_crash_data.json')
+    # data = json.load(f)
 
+    log.info("getTrafficCrashData > begin")
     res = requests.get('https://data.cityofchicago.org/resource/85ca-t3if.json')
     res = res.json()
-    # print(json.dumps(res, indent=3))
+    log.info("getTrafficCrashData > Done parsing result from API call.. returning result to caller")
     return res
 
+def getTrafficCongestionData():
+    log.info("getTrafficCongestionData > begin")
+    congestion_raw_data = requests.get('https://data.cityofchicago.org/resource/n4j6-wkkf.json')
+    congestion_raw_data = congestion_raw_data.json()
+    # print(json.dumps(congestion_raw_data, indent=3))
+    log.info("getTrafficCongestionData > done")
+    return congestion_raw_data
 
 
-def formatdata(res):
-    formatted_data = []
+def formatRecord(record: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+            "crash_record_id": record.get("crash_record_id"),
+            "crash_date": record.get("crash_date"),
+            "crash_hour": record.get("crash_hour"),
+            "crash_day_of_week": record.get("crash_day_of_week"),
+            "crash_month": record.get("crash_month"),
+            "posted_speed_limit": record.get("posted_speed_limit"),
+            "weather_condition": record.get("weather_condition"),
+            "lighting_condition": record.get("lighting_condition"),
+            "first_crash_type": record.get("first_crash_type"),
+            "trafficway_type": record.get("trafficway_type"),
+            "roadway_surface_cond": record.get("roadway_surface_cond"),
+            "street_alignment": record.get("alignment"),
+            "road_defect": record.get("road_defect"),
+            "crash_type": record.get("crash_type"),
+            "damage": record.get("damage"),
+            "main_cause": record.get("prim_contributory_cause"),
+            "secondary_cause": record.get("sec_contributory_cause"),
+            "street_number": record.get("street_no"),
+            "street_direction": record.get("street_direction"),
+            "street_name": record.get("street_name"),
+            "latitude": record.get("latitude"),
+            "longitude": record.get("longitude"),
+        }
 
-    for record in res:
-        formatted_record= {'crash_record_id': record['crash_record_id'], 'speed_limit': record['posted_speed_limit'],
-                           'weather_condition': record['weather_condition'],
-                           'lightning_condition': record['lighting_condition']}
-        formatted_data.append(formatted_record)
-    return formatted_data
+def publishFormattedTrafficCrashData(res: List[Dict[str, Any]]):
+    log.info("publishFormattedTrafficCrashData > started. receiving {} data".format(len(res)))
+    for idx, record in enumerate(res):
+        formatted_record = formatRecord(record)
+        log.info("{} publishFormattedTrafficCrashData > data formatted, sending data to Kafka".format(idx))
+        producer.send('traffic_crash_data', json.dumps(formatted_record).encode('utf-8'))
+        log.info("{} publishFormattedTrafficCrashData > data sent to Kafka, sleeping..".format(idx))
+        time.sleep(0.5)
+        log.info(idx, "publishFormattedTrafficCrashData > sleep timer off.")
+    log.info("publishFormattedTrafficCrashData > done.")
 
 
-def stream_data():
-    import json
-    res = getdata()
-    format_res = formatdata(res)
-    print(json.dumps(format_res, indent=3))
+with DAG(
+        'task_chicago_data_populate',
+        schedule='*/3 * * * *',
+        default_args=default_args,
+        catchup=True
+) as dag:
+    def stream_data():
+        import json
+        res = getTrafficCrashData()
+        publishFormattedTrafficCrashData(res)
 
+    streaming_task = PythonOperator(
+        task_id='stream_data_from_api_to_kafka',
+        python_callable=stream_data
+    )
 
-stream_data()
+    streaming_task
