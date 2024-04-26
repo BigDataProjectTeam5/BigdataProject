@@ -101,7 +101,7 @@ def create_spark_connection():
             .appName('SparkDataStreaming') \
             .config('spark.jars.packages', "com.datastax.spark:spark-cassandra-connector_2.12:3.0.1,"
                                            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1") \
-            .config('spark.cassandra.connection.host', 'localhost') \
+            .config('spark.cassandra.connection.host', 'cassandra') \
             .getOrCreate()
 
         s_conn.sparkContext.setLogLevel("ERROR")
@@ -117,7 +117,7 @@ def connect_to_kafka(spark_conn):
     try:
         spark_df = spark_conn.readStream \
             .format('kafka') \
-            .option('kafka.bootstrap.servers', 'localhost:9092') \
+            .option('kafka.bootstrap.servers', 'broker:9092') \
             .option('subscribe', 'traffic_crash_data') \
             .option('startingOffsets', 'earliest') \
             .load()
@@ -133,7 +133,7 @@ def connect_to_kafka(spark_conn):
 def create_cassandra_connection():
     try:
         # connecting to cassandra cluster
-        cluster = Cluster(['localhost'])
+        cluster = Cluster(['cassandra'])
         cas_session = cluster.connect()
         return cas_session
     except Exception as e:
