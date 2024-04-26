@@ -229,6 +229,9 @@ services:
       - "7077:7077"
     networks:
       - confluent
+    depends_on:
+      broker:
+        condition: service_healthy
 
   spark-worker:
     image: bitnami/spark:latest
