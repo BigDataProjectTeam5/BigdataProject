@@ -5,8 +5,10 @@ from cassandra.auth import PlainTextAuthProvider
 from cassandra.cluster import Cluster
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col
+from pyspark.sql.functions import from_json, col, lit
 from pyspark.sql.types import StructType, StructField, StringType
+
+from uuid import uuid4
 
 
 def create_keyspace(session):
@@ -52,7 +54,7 @@ def create_table(session):
 def insert_data(session, **kwargs):
     # insertion here
     print("inserting data...")
-    user_id = kwargs.get('id')
+    user_id = str(uuid4())
     crash_record_id = kwargs.get('crash_record_id')
     crash_date = kwargs.get('crash_date')
     crash_hour = kwargs.get('crash_hour')
@@ -169,8 +171,12 @@ def create_selection_df_from_kafka(spark_df):
     ])
 
     sel = spark_df.selectExpr("CAST(value AS STRING)") \
-        .select(from_json(col('value'), schema).alias('data')).select("data.*")
-    print(sel)
+    .select(from_json(col('value'), schema).alias('json'))
+    
+    sel = sel.withColumn('json', col('json').withField('id', lit(str(uuid4()))))
+    
+    print(sel.printSchema())
+    sel = sel.select("json.*")
 
     return sel
 
