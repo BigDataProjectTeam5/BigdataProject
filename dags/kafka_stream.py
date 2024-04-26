@@ -73,6 +73,13 @@ def publishFormattedTrafficCrashData(res: List[Dict[str, Any]]):
         log.info("%s publishFormattedTrafficCrashData > data sent to Kafka, continuing..", idx)
     log.info("publishFormattedTrafficCrashData > done.")
 
+def stream_data():
+    import json
+    res = getTrafficCrashData()
+    publishFormattedTrafficCrashData(res)
+
+stream_data()
+
 
 with DAG(
         'task_chicago_data_populate',

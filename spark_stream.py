@@ -93,7 +93,7 @@ def insert_data(session, **kwargs):
     except Exception as e:
         logging.error(f"could not insert data due to exception {e}")
 
-
+# .config('spark.cassandra.connection.host', 'cassandra') \
 def create_spark_connection():
     s_conn = None
     try:
@@ -101,11 +101,12 @@ def create_spark_connection():
             .appName('SparkDataStreaming') \
             .config('spark.jars.packages', "com.datastax.spark:spark-cassandra-connector_2.12:3.0.1,"
                                            "org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1") \
-            .config('spark.cassandra.connection.host', 'cassandra') \
+            .config('spark.jars.packages', 'org.postgresql:postgresql:42.5.4') \
             .getOrCreate()
 
         s_conn.sparkContext.setLogLevel("ERROR")
         logging.info("Spark connection created successfully!")
+        return s_conn
     except Exception as e:
         logging.error(f"Couldn't create spark connection due to exception {e}")
 
@@ -130,14 +131,17 @@ def connect_to_kafka(spark_conn):
     return spark_df
 
 
-def create_cassandra_connection():
+def create_postgre_connection(spark_conn):
     try:
         # connecting to cassandra cluster
-        cluster = Cluster(['cassandra'])
-        cas_session = cluster.connect()
-        return cas_session
+        # cluster = Cluster(['cassandra'])
+        # cas_session = cluster.connect()
+        # return cas_session
+        postgre_session = SparkSession(spark_conn)
+        return postgre_session
     except Exception as e:
-        logging.error(f"Couldn't create cassandra connection due to exception {e}")
+        print(e)
+        logging.error(f"Couldn't create postgresql connection due to exception {e}")
         return None
 
 
@@ -183,16 +187,30 @@ if __name__ == "__main__":
         # connect to kafka with spark connection
         spark_df = connect_to_kafka(spark_conn)
         selection_df = create_selection_df_from_kafka(spark_df)
-        session = create_cassandra_connection()
+        session = create_postgre_connection(spark_conn)
 
         if session is not None:
-            create_keyspace(session)
-            create_table(session)
+            # create_keyspace(session)
+            # create_table(session)
             # insert_data(session)
-            logging.info("Streaming is being started...")
-            streaming_query = (selection_df.writeStream.format("org.apache.spark.sql.cassandra")
-                                .option('checkpointLocation', '/tmp/checkpoint')
-                                .option('keyspace', 'spark_streams')
-                                .option('table', 'created_crash_records')
-                                .start())
-            streaming_query.awaitTermination()
+            
+            print("Streaming is being started...")
+            
+            # streaming_query = (selection_df.writeStream.format("org.apache.spark.sql.cassandra")
+            #                     .option('checkpointLocation', '/tmp/checkpoint')
+            #                     .option('keyspace', 'spark_streams')
+            #                     .option('table', 'created_crash_records')
+            #                     .start())
+
+            postgredf = selection_df.writeStream.format("jdbc"). \
+            options(
+                    url='jdbc:postgresql://localhost:5432/traffic_crash_data', # jdbc:postgresql://<host>:<port>/<database>
+                    dbtable='created_crash_records',
+                    user='postgres',
+                    driver='org.postgresql.Driver').\
+            start()
+
+            # postgredf.printSchema()
+
+            print("Streaming ended...")
+            # streaming_query.awaitTermination()
