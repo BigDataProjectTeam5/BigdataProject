@@ -78,7 +78,7 @@ with DAG(
         'task_chicago_data_populate',
         schedule='*/5 * * * *',
         default_args=default_args,
-        catchup=True
+        catchup=False
 ) as dag:
     def stream_data():
         import json

@@ -13,11 +13,12 @@ x-airflow-common:
     AIRFLOW__CORE__ENABLE_XCOM_PICKLING: 'true'
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CORE__FERNET_KEY: ''
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
-    AIRFLOW__CORE__PARALLELISM: 1
-    AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: 1
+    AIRFLOW__CORE__PARALLELISM: '1'
+    AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: '1'
+    AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: '1'
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
     # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
@@ -180,11 +181,8 @@ services:
     container_name: broker
     ports:
       - 9092
-    # depends_on:
-    #   - zookeeper
     environment:
       ALLOW_PLAINTEXT_LISTENER: 'yes'
-      # KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@broker:9093
       KAFKA_KRAFT_CLUSTER_ID: clusterIdRandomName
       KAFKA_CFG_PROCESS_ROLES: controller,broker
@@ -197,7 +195,6 @@ services:
       test: ["CMD", "kafka-topics.sh", "--bootstrap-server=localhost:9092", "--list"]
       start_period: 15s
       interval: 10s
-    # command: sh -c "((sleep 15 && kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --topic traffic_crash_data)&) && /etc/confluent/docker/run "
 
   init-kafka:
     image: *kafka-image
