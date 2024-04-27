@@ -1,3 +1,6 @@
+KAFKA_USERNAME = ""
+KAFKA_PASSWORD = ""
+KAFKA_HOST = ""
 import logging
 from datetime import datetime
 
@@ -140,14 +143,26 @@ def create_spark_connection():
 
 
 def connect_to_kafka(spark_conn):
+    auth_string = (
+        'org.apache.kafka.common.security.scram.ScramLoginModule required username="'
+        + KAFKA_USERNAME
+        + '" password="'
+        + KAFKA_PASSWORD
+        + '";'
+    )
+
     spark_df = None
     try:
         spark_df = (
             spark_conn.readStream.format("kafka")
-            .option("kafka.bootstrap.servers", "broker:9092")
+            .option("kafka.bootstrap.servers", KAFKA_HOST)
+            .option("kafka.sasl.mechanism", "SCRAM-SHA-256")
+            .option("kafka.security.protocol", "SASL_SSL")
+            .option("kafka.sasl.jaas.config", auth_string)
             .option("subscribe", "traffic_crash_data")
             .option("startingOffsets", "earliest")
             .load()
+            .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
         )
 
         logging.info("kafka dataframe created successfully")
