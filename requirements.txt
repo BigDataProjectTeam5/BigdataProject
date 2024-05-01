@@ -8,3 +8,5 @@ psycopg-binary
 kafka-python-ng
 kafka-python
 numpy
+matplotlib
+pandas

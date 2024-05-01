@@ -4,6 +4,8 @@ from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.evaluation import BinaryClassificationEvaluator
 from pyspark.sql.types import IntegerType
+import matplotlib.pyplot as plt
+import pandas as pd
 
 # Create a Spark session
 spark = SparkSession.builder.appName("ETL").getOrCreate()
@@ -131,6 +133,25 @@ df_transformed = df_transformed.withColumn("POSTED_SPEED_LIMIT_INT", floor(col("
 # Drop the DEVICE_CONDITION column if DEVICE_CONDITION_INT is storing the value
 df_transformed = df_transformed.drop("DEVICE_CONDITION", "INJURIES_TOTAL", "ROAD_DEFECT", "ROADWAY_SURFACE_COND",
                                      "LIGHTING_CONDITION", "WEATHER_CONDITION")
+
+# Collect the data to the driver node
+hourly_crash_count_collect = df_transformed.groupBy("CRASH_HOUR").count().orderBy("CRASH_HOUR").collect()
+
+# Convert to Pandas DataFrame
+hourly_crash_count_pd = pd.DataFrame(hourly_crash_count_collect, columns=["CRASH_HOUR", "count"])
+
+# Convert CRASH_HOUR to integer for correct ordering
+hourly_crash_count_pd["CRASH_HOUR"] = hourly_crash_count_pd["CRASH_HOUR"].astype(int)
+
+# Plotting the bar chart
+plt.figure(figsize=(12, 6))
+plt.bar(hourly_crash_count_pd["CRASH_HOUR"], hourly_crash_count_pd["count"], color='skyblue')
+plt.xlabel('Hour of the Day')
+plt.ylabel('Number of Crashes')
+plt.title('Distribution of Injury-causing Crashes by Hour of the Day')
+plt.xticks(hourly_crash_count_pd["CRASH_HOUR"])
+plt.grid(axis='y', linestyle='--', alpha=0.6)
+plt.show()
 
 # Select columns for analysis
 features = [

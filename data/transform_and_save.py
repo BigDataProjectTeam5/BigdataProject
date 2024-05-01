@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, to_date, when, floor, to_timestamp, date_format
+from pyspark.sql.functions import col, when, floor, to_timestamp, date_format
 
 # Create a Spark session
 spark = SparkSession.builder.appName("ETL").getOrCreate()
