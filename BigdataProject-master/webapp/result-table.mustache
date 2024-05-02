@@ -1,0 +1,43 @@
+<!DOCTYPE html PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html>
+  <head>
+    <title>Result</title>
+    <link type="text/css" rel="stylesheet" href="table.css" />
+  </head>
+  <body>
+    <div>&nbsp;Traffic Information for {{street}} in MPH&nbsp;</div>
+    <p style="bottom-margin:100px">
+      <table class="CSS_Table_Example" style="width:100%;margin:auto;">
+        <tr><td>Direction</td><td>From Street</td><td>To Street</td><td>Month</td><td>Week</td>
+            <td>Day</td><td>Hour</td><td>Current</td></tr>
+            {{#SpeedInfo}}
+        <tr><td><b>{{traffic_direction}}</b></td><td>{{from_street}}</td><td>{{to_street}}</td>
+            <td>{{speed_month}}</td><td>{{speed_week}}</td><td>{{speed_day}}</td>
+            <td>{{speed_hour}}</td><td>{{speed_now}}</td></tr>
+            {{/SpeedInfo}}
+    </table>
+    <br>
+    <div>&nbsp;Redlight and Speed Camera Info for {{street}}&nbsp;</div>
+    <br><br>
+    <table class="CSS_Table_Example" style="width:100%;margin:auto;">
+        <tr><td>Redlight Camera <br/>Violations: 1 Year</td>
+            <td>Redlight Camera <br/>Violations: 3 Months</td>
+            <td>Speed Camera <br/>Violations: 1 Year</td>
+            <td>Speed Camera <br/>Violations: 3 Months</td></tr>
+        {{#RedlightSpeedInfo}}
+            <tr><td><b>{{redlight_year}}</b></td><td>{{redlight_months}}</td><td>{{speed_year}}</td>
+                <td>{{speed_months}}</td></tr>
+        {{/RedlightSpeedInfo}}
+    </table>
+    <br>
+    <div>&nbsp;Traffic Crashes in {{street}} Within the last Month&nbsp;</div>
+    <br><br>
+    <table class="CSS_Table_Example" style="width:100%;margin:auto;">
+        <tr><td>Crash Date</td><td>Address</td><td>First Crash Type</td><td>Primary Cause</td><td>Damage</td></tr>
+        {{#CrashInfo}}
+            <tr><td><b>{{crash_date}}</b></td><td>{{address}}</td><td>{{first_crash_type}}</td>
+                <td>{{prim_cause}}</td><td>{{damage}}</td></tr>
+        {{/CrashInfo}}
+    </table>
+    </p>
+</body></html>
